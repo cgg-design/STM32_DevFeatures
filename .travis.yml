@@ -1,0 +1,24 @@
+# language: cpp
+# os: linux
+# compiler:
+#   - gcc
+
+# script:
+#   - cmake -S . -B build
+#   - cmake --build build --parallel
+#   - ctest --test-dir build --output-on-failure
+language: python
+
+python:
+  - "3.11"
+
+cache:
+  directories:
+    - "$HOME/.platformio"
+    - "$HOME/.cache/pip"
+
+install:
+  - python -m pip install --upgrade platformio
+
+script:
+  - pio run -e nucleo_f446re
