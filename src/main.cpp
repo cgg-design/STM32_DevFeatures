@@ -43,9 +43,9 @@ void vBlinkTask(void *pvParameters) {
     pinMode(LED_BUILTIN, OUTPUT);
     while (1) {
         digitalWrite(LED_BUILTIN, HIGH);
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(1000));
         digitalWrite(LED_BUILTIN, LOW);
-        vTaskDelay(pdMS_TO_TICKS(250));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
