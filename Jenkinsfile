@@ -53,6 +53,17 @@ pipeline {
                 )
             }
         }
+        stage('Flash STM32') {
+            when {
+                expression {
+                    params.FLASH_HARDWARE == true
+                }
+            }
+            steps {
+                bat '"%PIO%" run -e %PIO_ENV% -t upload'
+            }
+        }
+
     }
 
     post {
