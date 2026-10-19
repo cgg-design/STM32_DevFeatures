@@ -24,11 +24,11 @@ void vProcessingTask(void *pvParameters) {
         if (xQueueReceive(xSensorQueue, &receivedValue, portMAX_DELAY)) {
             // Process data (e.g., multiply or filter)
             int processedValue = receivedValue * 2;
-             uint32_t cpid = SCB->CPUID;
+            //  uint32_t cpid = SCB->CPUID;
             // Pass along or print safely using a Mutex
             if (xSemaphoreTake(xPrintMutex, portMAX_DELAY) == pdTRUE) {
                 // Serial.printf("  CPUID Register:  0x%08lX\r\n", cpid);
-                Serial.print("  CPUID Register:  0x");
+                // Serial.print("  CPUID Register:  0x");
                 Serial.println(cpid, HEX);
                 Serial.print("T2-Processed Value: ");
                 Serial.println(processedValue);
