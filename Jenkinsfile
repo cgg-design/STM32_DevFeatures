@@ -151,22 +151,22 @@ pipeline {
         }
     }
 
-    post {
-        success {
-            echo 'STM32 pipeline successfully built, tested, and flashed!'
-            emailext (
-                subject: "SUCCESS: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "The pipeline completed successfully.\n\nCheck console output at: ${env.BUILD_URL}",
-                to: 'c.guetsop@gmail.com'
-            )
-        }
-        failure {
-            echo 'Pipeline failed. Check the Jenkins console output.'
-            emailext (
-                subject: "FAILED: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
-                body: "The pipeline failed during execution.\n\nCheck console output at: ${env.BUILD_URL}",
-                to: 'c.guetsop@gmail.com'
-            )
-        }
-    }
+    // post {
+    //     success {
+    //         echo 'STM32 pipeline successfully built, tested, and flashed!'
+    //         emailext (
+    //             subject: "SUCCESS: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+    //             body: "The pipeline completed successfully.\n\nCheck console output at: ${env.BUILD_URL}",
+    //             to: 'c.guetsop@gmail.com'
+    //         )
+    //     }
+    //     failure {
+    //         echo 'Pipeline failed. Check the Jenkins console output.'
+    //         emailext (
+    //             subject: "FAILED: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+    //             body: "The pipeline failed during execution.\n\nCheck console output at: ${env.BUILD_URL}",
+    //             to: 'c.guetsop@gmail.com'
+    //         )
+    //     }
+    // }
 }
