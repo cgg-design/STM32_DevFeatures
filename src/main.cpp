@@ -12,7 +12,7 @@ void vSensorTask(void *pvParameters) {
         sampleValue++;
         // Send data to the queue (blocks if queue is full)
         xQueueSend(xSensorQueue, &sampleValue, portMAX_DELAY);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
