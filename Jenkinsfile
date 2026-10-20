@@ -5,7 +5,7 @@ pipeline {
         booleanParam(
             name: 'FLASH_HARDWARE',
             defaultValue: true,
-            description: 'Set to true to flash the compiled firmware onto the STM32 board via ST-LINK'
+            description: 'Set to true to flash compiled firmware onto the STM32 board via ST-LINK'
         )
         booleanParam(
             name: 'RUN_TESTS',
@@ -22,8 +22,7 @@ pipeline {
     environment {
         PIO = 'C:\\tools\\pio-venvr\\Scripts\\pio.exe'
         PIO_ENV = 'nucleo_f446re'
-        DOXYGEN = 'C:\\Program Files\\doxygen\\bin\\doxygen.exe' // Path to Doxygen executable
-        CPPCHECK = 'C:\\Program Files\\Cppcheck\\cppcheck.exe'  // Path to Cppcheck executable
+        CPPCHECK = 'cppcheck'
     }
 
     stages {
@@ -33,11 +32,37 @@ pipeline {
             }
         }
 
+        stage('Bootstrap Tools (Doxygen)') {
+            steps {
+                powershell '''
+                    $doxygenBin = "C:\\tools\\doxygen\\bin"
+                    if (!(Test-Path "$doxygenBin\\doxygen.exe")) {
+                        Write-Host "Doxygen missing. Downloading portable version to C:\\tools\\doxygen..."
+                        New-Item -ItemType Directory -Force -Path "C:\\tools\\doxygen" | Out-Null
+                        $url = "https://www.doxygen.nl/files/doxygen-1.11.0.windows.x64.bin.zip"
+                        $zipPath = "$env:TEMP\\doxygen.zip"
+                        Invoke-WebRequest -Uri $url -OutFile $zipPath
+                        Expand-Archive -Path $zipPath -DestinationPath "C:\\tools\\doxygen" -Force
+                        Remove-Item $zipPath
+                        Write-Host "Doxygen successfully installed."
+                    } else {
+                        Write-Host "Doxygen already present at C:\\tools\\doxygen."
+                    }
+                '''
+            }
+        }
+
         stage('Check Tools') {
             steps {
                 bat '''
                     git --version
                     "%PIO%" --version
+                    cppcheck --version || echo Cppcheck not in PATH
+                    if exist "C:\\tools\\doxygen\\bin\\doxygen.exe" (
+                        "C:\\tools\\doxygen\\bin\\doxygen.exe" --version
+                    ) else (
+                        doxygen --version || echo Doxygen not found in PATH
+                    )
                 '''
             }
         }
@@ -45,12 +70,11 @@ pipeline {
         stage('Static Code Analysis') {
             steps {
                 echo 'Running static code analysis with Cppcheck...'
-                // Generates an XML report of code defects and warnings
                 bat '''
-                    if exist "%CPPCHECK%" (
-                        "%CPPCHECK%" --enable=all --inconclusive --xml --xml-version=2 src/ include/ 2> cppcheck-report.xml
-                    ) else (
-                        echo Cppcheck not installed, skipping static analysis.
+                    cppcheck --version >nul 2>&1 && (
+                        cppcheck --enable=all --inconclusive --xml --xml-version=2 src/ include/ 2> cppcheck-report.xml
+                    ) || (
+                        echo Cppcheck not found in PATH, skipping static analysis.
                     )
                 '''
             }
@@ -60,13 +84,13 @@ pipeline {
             steps {
                 echo 'Generating Doxygen documentation...'
                 bat '''
-                    if exist "%DOXYGEN%" (
-                        "%DOXYGEN%" Doxyfile
-                    ) else (
-                        echo Doxygen not found, skipping documentation generation.
+                    set "PATH=C:\\tools\\doxygen\\bin;%PATH%"
+                    doxygen --version >nul 2>&1 && (
+                        doxygen Doxyfile
+                    ) || (
+                        echo Doxygen execution failed or Doxyfile missing, skipping documentation generation.
                     )
                 '''
-                // Publish Doxygen HTML documentation on the Jenkins UI
                 publishHTML([
                     allowMissing: true,
                     alwaysLinkToLastBuild: true,
@@ -92,7 +116,6 @@ pipeline {
             }
             steps {
                 echo 'Executing PlatformIO Unit Tests...'
-                // Runs native or target unit tests configured in platformio.ini
                 bat '"%PIO%" test -e %PIO_ENV%'
             }
         }
@@ -130,10 +153,20 @@ pipeline {
 
     post {
         success {
-            echo 'STM32 firmware build, testing, and documentation completed successfully!'
+            echo 'STM32 pipeline successfully built, tested, and flashed!'
+            emailext (
+                subject: "SUCCESS: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+                body: "The pipeline completed successfully.\n\nCheck console output at: ${env.BUILD_URL}",
+                to: 'c.guetsop@gmail.com'
+            )
         }
         failure {
             echo 'Pipeline failed. Check the Jenkins console output.'
+            emailext (
+                subject: "FAILED: Job '${env.JOB_NAME} [Build #${env.BUILD_NUMBER}]'",
+                body: "The pipeline failed during execution.\n\nCheck console output at: ${env.BUILD_URL}",
+                to: 'c.guetsop@gmail.com'
+            )
         }
     }
 }
