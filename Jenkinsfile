@@ -98,11 +98,15 @@ pipeline {
                 echo 'Generating Doxygen documentation...'
                 bat '''
                     set "PATH=C:\\tools\\doxygen\\bin;%PATH%"
-                    doxygen --version >nul 2>&1 && (
-                        doxygen Doxyfile
-                    ) || (
-                        echo Doxygen execution failed or Doxyfile missing, skipping documentation generation.
+                    
+                    :: Falls keine Doxyfile existiert, automatisch eine Standard-Config erzeugen
+                    if not exist "Doxyfile" (
+                        echo Doxyfile not found. Generating default Doxyfile...
+                        doxygen -g Doxyfile
                     )
+                    
+                    :: Dokumentation generieren
+                    doxygen Doxyfile
                 '''
                 publishHTML([
                     allowMissing: true,
