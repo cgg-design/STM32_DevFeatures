@@ -22,7 +22,6 @@ pipeline {
     environment {
         PIO = 'C:\\tools\\pio-venvr\\Scripts\\pio.exe'
         PIO_ENV = 'nucleo_f446re'
-        CPPCHECK = 'cppcheck'
     }
 
     stages {
@@ -32,9 +31,10 @@ pipeline {
             }
         }
 
-        stage('Bootstrap Tools (Doxygen)') {
+        stage('Bootstrap Tools (Doxygen & Cppcheck)') {
             steps {
                 powershell '''
+                    # 1. Install/Verify Doxygen Portable
                     $doxygenBin = "C:\\tools\\doxygen\\bin"
                     if (!(Test-Path "$doxygenBin\\doxygen.exe")) {
                         Write-Host "Doxygen missing. Downloading portable version to C:\\tools\\doxygen..."
@@ -46,7 +46,19 @@ pipeline {
                         Remove-Item $zipPath
                         Write-Host "Doxygen successfully installed."
                     } else {
-                        Write-Host "Doxygen already present at C:\\tools\\doxygen."
+                        Write-Host "Doxygen is ready at C:\\tools\\doxygen."
+                    }
+
+                    # 2. Install/Verify Cppcheck via Chocolatey
+                    if (!(Get-Command "cppcheck" -ErrorAction SilentlyContinue) -and !(Test-Path "C:\\Program Files\\Cppcheck\\cppcheck.exe")) {
+                        if (Get-Command "choco" -ErrorAction SilentlyContinue) {
+                            Write-Host "Cppcheck missing. Installing via Chocolatey..."
+                            choco install cppcheck -y
+                        } else {
+                            Write-Warning "Cppcheck not found and Chocolatey is not installed. Please install Cppcheck or Chocolatey manually."
+                        }
+                    } else {
+                        Write-Host "Cppcheck is ready."
                     }
                 '''
             }
@@ -57,12 +69,12 @@ pipeline {
                 bat '''
                     git --version
                     "%PIO%" --version
-                    cppcheck --version || echo Cppcheck not in PATH
-                    if exist "C:\\tools\\doxygen\\bin\\doxygen.exe" (
-                        "C:\\tools\\doxygen\\bin\\doxygen.exe" --version
-                    ) else (
-                        doxygen --version || echo Doxygen not found in PATH
-                    )
+                    
+                    :: Add Doxygen and Cppcheck paths to current session
+                    set "PATH=C:\\tools\\doxygen\\bin;C:\\Program Files\\Cppcheck;%PATH%"
+                    
+                    cppcheck --version || echo Cppcheck not found in PATH
+                    doxygen --version || echo Doxygen not found in PATH
                 '''
             }
         }
@@ -71,10 +83,11 @@ pipeline {
             steps {
                 echo 'Running static code analysis with Cppcheck...'
                 bat '''
+                    set "PATH=C:\\Program Files\\Cppcheck;%PATH%"
                     cppcheck --version >nul 2>&1 && (
                         cppcheck --enable=all --inconclusive --xml --xml-version=2 src/ include/ 2> cppcheck-report.xml
                     ) || (
-                        echo Cppcheck not found in PATH, skipping static analysis.
+                        echo Cppcheck not found, skipping static analysis.
                     )
                 '''
             }
