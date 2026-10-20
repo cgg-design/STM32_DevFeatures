@@ -1,6 +1,13 @@
-
 pipeline {
     agent any
+
+    parameters {
+        booleanParam(
+            name: 'FLASH_HARDWARE',
+            defaultValue: true,
+            description: 'Set to true to flash the compiled firmware onto the STM32 board via ST-LINK'
+        )
+    }
 
     options {
         timestamps()
@@ -8,7 +15,7 @@ pipeline {
     }
 
     environment {
-        PIO = 'C:\\tools\\pio-venvr\\Scripts\\pio.exe'
+        PIO = 'C:\\tools\\pio-venv\\Scripts\\pio.exe'
         PIO_ENV = 'nucleo_f446re'
     }
 
@@ -35,10 +42,11 @@ pipeline {
                 '''
             }
         }
+
         stage('Flash STM32') {
             when {
                 expression {
-                    params.FLASH_HARDWARE == true
+                    return "${params.FLASH_HARDWARE}".toBoolean() == true
                 }
             }
             steps {
