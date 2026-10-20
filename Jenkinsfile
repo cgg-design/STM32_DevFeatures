@@ -15,7 +15,7 @@ pipeline {
     }
 
     environment {
-        PIO = 'C:\\tools\\pio-venv\\Scripts\\pio.exe'
+        PIO = 'C:\\tools\\pio-venvr\\Scripts\\pio.exe'
         PIO_ENV = 'nucleo_f446re'
     }
 
